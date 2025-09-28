@@ -1,0 +1,20 @@
+{
+  "name": "tower-war-clone",
+  "description": "Tower War Clone Game built on Phaser.js ",
+  "version": "0.1.0",
+  "author": "Yevhen Sakara & OmiSoft.net Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.5.12",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}
