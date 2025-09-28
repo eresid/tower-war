@@ -1,5 +1,5 @@
-import Phaser from "phaser";
-import { Owner } from "../utils/GameHelper";
+import Phaser, { Geom } from "phaser";
+import { Owner, isEnemy } from "../utils/GameHelper";
 import Tower from "../prefabs/Tower";
 import Link from "../prefabs/Link";
 import Soldier from "../prefabs/Soldier";
@@ -10,7 +10,9 @@ export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
   links: Link[] = [];
   soldiers!: Phaser.GameObjects.Group;
-  obstacles: Obstacle[] = [{ x: 240, y: 340, width: 340, height: 24 }];
+  obstacles: Obstacle[] = [
+    //{ x: 240, y: 340, width: 340, height: 24 }
+  ];
 
   flowGfx!: Phaser.GameObjects.Graphics;
   obstacleGfx!: Phaser.GameObjects.Graphics;
@@ -30,6 +32,7 @@ export default class MainScene extends Phaser.Scene {
     this.towers.push(Tower.spawn(this, 320, 140, Owner.Red, 25));
     this.towers.push(Tower.spawn(this, 160, 340, Owner.Neutral, 5));
     this.towers.push(Tower.spawn(this, 450, 560, Owner.Blue, 19));
+    this.towers.push(Tower.spawn(this, 0, 0, Owner.Blue, 19));
 
     this.soldiers = this.add.group();
     this.flowGfx = this.add.graphics();
@@ -52,28 +55,46 @@ export default class MainScene extends Phaser.Scene {
       const tower: Tower | undefined = targets.find((o) => o instanceof Tower);
       if (!tower) return;
 
-      // якщо нічого не вибрано — вибрати
-      if (!this.selectedTower) {
+      // If there is no selected tower and we click on the enemy - do nothing
+      if (!this.selectedTower && isEnemy(tower.owner)) {
+        return;
+      }
+
+      // If there is no selected tower, and we click on our own tower, we select it
+      if (!this.selectedTower && !isEnemy(tower.owner)) {
         this.setSelection(tower);
         return;
       }
 
-      // якщо натиснули на ту ж — зняти виділення
-      if (this.selectedTower === tower) {
-        this.setSelection(null);
-        return;
-      }
-
-      // є вибір і натиснули на іншу вежу -> почати атаку (створити/увімкнути лінк)
-      if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, tower.x, tower.y)) {
+      // If there is a selected tower, and we click on another own tower - support this tower
+      if (this.selectedTower && !isEnemy(tower.owner)) {
         const existing = this.links.find((l) => l.from === this.selectedTower && l.to === tower);
         if (!existing) {
           this.links.push(new Link(this, this.selectedTower, tower));
         } else {
           existing.active = true; // на випадок, якщо колись відключали
         }
+
+        this.setSelection(null);
+        return;
       }
-      // після старту атаки скидаємо вибір
+
+      // If there is a selected tower and we click on the enemy tower, we attack it
+      if (this.selectedTower && isEnemy(tower.owner)) {
+        if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, tower.x, tower.y)) {
+          console.log("WE CAN ATTACK :)");
+          const existing = this.links.find((l) => l.from === this.selectedTower && l.to === tower);
+          if (!existing) {
+            this.links.push(new Link(this, this.selectedTower, tower));
+          } else {
+            existing.active = true; // на випадок, якщо колись відключали
+          }
+        } else {
+          console.log("WE CANNOT ATTACK :(");
+        }
+      }
+
+      // After the attack starts, we reset the selection
       this.setSelection(null);
     });
   }
@@ -93,10 +114,10 @@ export default class MainScene extends Phaser.Scene {
   /** Чи чистий шлях між двома точками (без перешкод) */
   isClearPath(x1: number, y1: number, x2: number, y2: number): boolean {
     if (this.obstacles.length === 0) return true;
-    const line = new Phaser.Geom.Line(x1, y1, x2, y2);
+    const line = new Geom.Line(x1, y1, x2, y2);
     for (const ob of this.obstacles) {
-      const rect = new Phaser.Geom.Rectangle(ob.x, ob.y, ob.width, ob.height);
-      if (Phaser.Geom.Intersects.GetLineToRectangle(line, rect)) return false;
+      const rect = new Geom.Rectangle(ob.x, ob.y, ob.width, ob.height);
+      if (Geom.Intersects.GetLineToRectangle(line, rect)) return false;
     }
     return true;
   }

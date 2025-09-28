@@ -14,4 +14,8 @@ const COLORS: Record<Owner, number> = {
 
 const ownerColor = (owner: Owner) => COLORS[owner];
 
-export { Owner, ownerColor };
+const isEnemy = (owner: Owner): boolean => {
+  return owner !== Owner.Blue;
+};
+
+export { Owner, ownerColor, isEnemy };
