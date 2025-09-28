@@ -1,3 +1,4 @@
+import { Scene } from "phaser";
 import { BALANCE } from "../utils/GameBalance";
 import { Owner, ownerColor } from "../utils/GameHelper";
 
@@ -11,6 +12,10 @@ export default class Tower extends Phaser.GameObjects.Container {
   label: Phaser.GameObjects.Text;
   selectRing: Phaser.GameObjects.Arc;
   lastGen: number;
+
+  static spawn(scene: Scene, x: number, y: number, owner: Owner, units: number, max?: number): Tower {
+    return new Tower(scene, x, y, owner, units, max || BALANCE.maxUnits);
+  }
 
   constructor(scene: Phaser.Scene, x: number, y: number, owner: Owner, startUnits = 10, maxUnits = BALANCE.maxUnits) {
     super(scene, x, y);
@@ -45,8 +50,8 @@ export default class Tower extends Phaser.GameObjects.Container {
     this.circle.fillColor = ownerColor(owner);
   }
 
-  setSelected(on: boolean) {
-    this.selectRing.setVisible(on);
+  setSelected(selected: boolean) {
+    this.selectRing.setVisible(selected);
   }
 
   updateLabel() {

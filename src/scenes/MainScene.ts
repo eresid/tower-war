@@ -1,12 +1,10 @@
 import Phaser from "phaser";
-import { Owner, ownerColor } from "../utils/GameHelper";
+import { Owner } from "../utils/GameHelper";
 import Tower from "../prefabs/Tower";
 import Link from "../prefabs/Link";
 import Soldier from "../prefabs/Soldier";
 import { BALANCE } from "../utils/GameBalance";
-
-/** Прямокутна перешкода (осьова) */
-type Obstacle = { x: number; y: number; width: number; height: number };
+import { Obstacle } from "../prefabs/Obstacle";
 
 export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
@@ -15,13 +13,13 @@ export default class MainScene extends Phaser.Scene {
 
   obstacles: Obstacle[] = [
     // приклад — порожньо; додай прямокутники за потреби
-    { x: 220, y: 340, width: 340, height: 24 },
+    { x: 240, y: 340, width: 340, height: 24 },
   ];
 
   flowGfx!: Phaser.GameObjects.Graphics;
   obstacleGfx!: Phaser.GameObjects.Graphics;
 
-  selected: Tower | null = null;
+  selectedTower: Tower | null = null;
   resultTxt!: Phaser.GameObjects.Text;
 
   constructor() {
@@ -29,18 +27,13 @@ export default class MainScene extends Phaser.Scene {
   }
 
   create() {
+    // Load Physics
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
-    // --- Towers (layout приклад)
-    const addT = (x: number, y: number, owner: Owner, units: number, max?: number) => {
-      const t = new Tower(this, x, y, owner, units, max || BALANCE.maxUnits);
-      this.towers.push(t);
-      return t;
-    };
-
-    const tY25 = addT(120, 140, Owner.Red, 25);
-    const n5a = addT(160, 340, Owner.Neutral, 5);
-    const b19 = addT(450, 560, Owner.Blue, 19);
+    // Load Towers
+    this.towers.push(Tower.spawn(this, 320, 140, Owner.Red, 25));
+    this.towers.push(Tower.spawn(this, 160, 340, Owner.Neutral, 5));
+    this.towers.push(Tower.spawn(this, 450, 560, Owner.Blue, 19));
 
     this.soldiers = this.add.group();
     this.flowGfx = this.add.graphics();
@@ -50,27 +43,27 @@ export default class MainScene extends Phaser.Scene {
     this.drawObstacles();
 
     // --- Керування кліками ---
-    this.input.on("pointerdown", (_p: any, targets: any[]) => {
+    this.input.on("pointerdown", (p: any, targets: any[]) => {
       const t: Tower | undefined = targets.find((o) => o instanceof Tower);
       if (!t) return;
 
       // якщо нічого не вибрано — вибрати
-      if (!this.selected) {
+      if (!this.selectedTower) {
         this.setSelection(t);
         return;
       }
 
       // якщо натиснули на ту ж — зняти виділення
-      if (this.selected === t) {
+      if (this.selectedTower === t) {
         this.setSelection(null);
         return;
       }
 
       // є вибір і натиснули на іншу вежу -> почати атаку (створити/увімкнути лінк)
-      if (this.isClearPath(this.selected.x, this.selected.y, t.x, t.y)) {
-        const existing = this.links.find((l) => l.from === this.selected && l.to === t);
+      if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, t.x, t.y)) {
+        const existing = this.links.find((l) => l.from === this.selectedTower && l.to === t);
         if (!existing) {
-          this.links.push(new Link(this, this.selected, t));
+          this.links.push(new Link(this, this.selectedTower, t));
         } else {
           existing.active = true; // на випадок, якщо колись відключали
         }
@@ -84,10 +77,16 @@ export default class MainScene extends Phaser.Scene {
       .setOrigin(0.5);
   }
 
-  private setSelection(t: Tower | null) {
-    if (this.selected) this.selected.setSelected(false);
-    this.selected = t;
-    if (this.selected) this.selected.setSelected(true);
+  private setSelection(tower: Tower | null) {
+    if (this.selectedTower) {
+      this.selectedTower.setSelected(false);
+    }
+
+    this.selectedTower = tower;
+
+    if (this.selectedTower) {
+      this.selectedTower.setSelected(true);
+    }
   }
 
   /** Чи чистий шлях між двома точками (без перешкод) */
@@ -107,13 +106,7 @@ export default class MainScene extends Phaser.Scene {
     from.units = Math.max(0, from.units - 1);
     from.updateLabel();
 
-    const s = new Soldier(this, from.x, from.y, ownerColor(from.owner), to, from.owner);
-    this.soldiers.add(s);
-    const angle = Phaser.Math.Angle.Between(from.x, from.y, to.x, to.y);
-    (s.body as Phaser.Physics.Arcade.Body).setVelocity(
-      Math.cos(angle) * BALANCE.moveSpeed,
-      Math.sin(angle) * BALANCE.moveSpeed
-    );
+    this.soldiers.add(Soldier.spawn(this, from.x, from.y, from, to));
   }
 
   /** Прибуття юніта у вежу */
