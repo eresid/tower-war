@@ -1,6 +1,6 @@
 import { Geom, Scene } from "phaser";
 import { BALANCE } from "../utils/GameBalance";
-import { Owner, ownerColor } from "../utils/GameHelper";
+import { Owner, ZIndex, ownerColor } from "../utils/GameHelper";
 
 export default class Tower extends Phaser.GameObjects.Container {
   owner: Owner;
@@ -12,6 +12,8 @@ export default class Tower extends Phaser.GameObjects.Container {
   label: Phaser.GameObjects.Text;
   selectRing: Phaser.GameObjects.Arc;
   lastGen: number;
+  centerX: number;
+  centerY: number;
 
   static spawn(scene: Scene, x: number, y: number, owner: Owner, units: number, max?: number): Tower {
     return new Tower(scene, x, y, owner, units, max || BALANCE.maxUnits);
@@ -26,10 +28,14 @@ export default class Tower extends Phaser.GameObjects.Container {
 
     // Container size (need for hitArea)
     this.setSize(this.radius * 2, this.radius * 2);
+    this.setDepth(ZIndex.Towers);
 
     // Center of local coordinates
     const cx = this.width / 2; // = this.radius
     const cy = this.height / 2; // = this.radius
+
+    this.centerX = this.x + cx;
+    this.centerY = this.y + cy;
 
     // Creating elements with a position in the center of the container
     this.base = scene.add.arc(cx, cy, this.radius + 6, 0, 360, false, 0x000000, 0.06);

@@ -1,10 +1,7 @@
 import MainScene from "../scenes/MainScene";
 import { BALANCE } from "../utils/GameBalance";
+import { ZIndex } from "../utils/GameHelper";
 import Tower from "./Tower";
-
-// flow-dots
-const FLOW_DOT_COLOR = 0x94a3b8; // slate-300/400
-const FLOW_DOT_ALPHA = 0.55;
 
 export default class Link {
   scene: MainScene;
@@ -29,7 +26,7 @@ export default class Link {
 
   update(delta: number) {
     if (!this.active) return;
-    if (!this.scene.isClearPath(this.from.x, this.from.y, this.to.x, this.to.y)) return;
+    if (!this.scene.isClearPath(this.from.centerX, this.from.centerY, this.to.centerX, this.to.centerY)) return;
 
     this.acc += delta;
     this.flowPhase = (this.flowPhase + delta * 0.12) % 10000;
@@ -42,20 +39,21 @@ export default class Link {
 
   draw(gfx: Phaser.GameObjects.Graphics) {
     const { from, to } = this;
-    if (!this.scene.isClearPath(from.x, from.y, to.x, to.y)) return;
+    if (!this.scene.isClearPath(from.centerX, from.centerY, to.centerX, to.centerY)) return;
 
-    const len = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
+    const len = Phaser.Math.Distance.Between(from.centerX, from.centerY, to.centerX, to.centerY);
     const spacing = 18;
     const count = Math.max(2, Math.floor(len / spacing));
-    const dx = (to.x - from.x) / len;
-    const dy = (to.y - from.y) / len;
+    const dx = (to.centerX - from.centerX) / len;
+    const dy = (to.centerY - from.centerY) / len;
 
     for (let i = 0; i < count; i++) {
       const t = (i * spacing + this.flowPhase) % len;
-      const x = from.x + dx * t;
-      const y = from.y + dy * t;
-      gfx.fillStyle(FLOW_DOT_COLOR, FLOW_DOT_ALPHA); // сірі, напівпрозорі
+      const x = from.centerX + dx * t;
+      const y = from.centerY + dy * t;
+      gfx.fillStyle(0x94a3b8, 0.55); // gray with some alpha
       gfx.fillCircle(x, y, 3);
+      gfx.setDepth(ZIndex.Paths);
     }
   }
 }

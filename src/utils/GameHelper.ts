@@ -12,10 +12,18 @@ const COLORS: Record<Owner, number> = {
   [Owner.Neutral]: 0x94a3b8,
 };
 
+enum ZIndex {
+  Background = 0,
+  Paths = 10, // gray "dots" of direction
+  Soldiers = 20, // soldiers (should be under the towers)
+  Towers = 30, // towers over soldiers
+  UI = 100,
+}
+
 const ownerColor = (owner: Owner) => COLORS[owner];
 
 const isEnemy = (owner: Owner): boolean => {
   return owner !== Owner.Blue;
 };
 
-export { Owner, ownerColor, isEnemy };
+export { Owner, ZIndex, ownerColor, isEnemy };

@@ -1,5 +1,5 @@
 import Phaser, { Geom } from "phaser";
-import { Owner, isEnemy } from "../utils/GameHelper";
+import { Owner, ZIndex, isEnemy } from "../utils/GameHelper";
 import Tower from "../prefabs/Tower";
 import Link from "../prefabs/Link";
 import Soldier from "../prefabs/Soldier";
@@ -47,7 +47,8 @@ export default class MainScene extends Phaser.Scene {
     // Win or Lose Text
     this.resultTxt = this.add
       .text(this.scale.width / 2, 36, "", { fontSize: "22px", color: "#111", fontStyle: "bold" })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(ZIndex.UI);
   }
 
   private setupControls() {
@@ -128,7 +129,7 @@ export default class MainScene extends Phaser.Scene {
     from.units = Math.max(0, from.units - 1);
     from.updateLabel();
 
-    this.soldiers.add(Soldier.spawn(this, from.x, from.y, from, to));
+    this.soldiers.add(Soldier.spawn(this, from.centerX, from.centerY, from, to));
   }
 
   /** Прибуття юніта у вежу */
@@ -151,7 +152,6 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
-    // генерація
     for (const t of this.towers) t.tick(delta);
 
     // апдейт лінків + промальовка напрямку
