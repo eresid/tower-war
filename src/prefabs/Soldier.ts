@@ -8,7 +8,7 @@ export default class Soldier extends Phaser.GameObjects.Arc {
   owner: Owner;
 
   static spawn(scene: Scene, x: number, y: number, from: Tower, to: Tower): Soldier {
-    const soldier = new Soldier(scene, x, y, ownerColor(from.owner), to, to.owner);
+    const soldier = new Soldier(scene, x, y, from, to);
 
     const angle = Phaser.Math.Angle.Between(from.centerX, from.centerY, to.centerX, to.centerY);
     (soldier.body as Physics.Arcade.Body).setVelocity(
@@ -19,10 +19,10 @@ export default class Soldier extends Phaser.GameObjects.Arc {
     return soldier;
   }
 
-  constructor(scene: Scene, x: number, y: number, color: number, targetTower: Tower, owner: Owner) {
-    super(scene, x, y, 6, 0, 360, false, color, 1); // радіус збільшено: 6
-    this.targetTower = targetTower;
-    this.owner = owner;
+  constructor(scene: Scene, x: number, y: number, from: Tower, to: Tower) {
+    super(scene, x, y, 6, 0, 360, false, ownerColor(from.owner), 1); // радіус збільшено: 6
+    this.targetTower = to;
+    this.owner = from.owner;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);

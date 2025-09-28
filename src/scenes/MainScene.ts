@@ -5,6 +5,7 @@ import Link from "../prefabs/Link";
 import Soldier from "../prefabs/Soldier";
 import { BALANCE } from "../utils/GameBalance";
 import { Obstacle } from "../prefabs/Obstacle";
+import MouseTrailCutter from "../prefabs/MouseTrailCutter";
 
 export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
@@ -49,6 +50,8 @@ export default class MainScene extends Phaser.Scene {
       .text(this.scale.width / 2, 36, "", { fontSize: "22px", color: "#111", fontStyle: "bold" })
       .setOrigin(0.5)
       .setDepth(ZIndex.UI);
+
+    MouseTrailCutter.instance(this, this.links);
   }
 
   private setupControls() {
@@ -126,29 +129,27 @@ export default class MainScene extends Phaser.Scene {
   /** Відправка 1 юніта по лінку */
   emitOne(from: Tower, to: Tower) {
     if (from.units < 1) return;
-    from.units = Math.max(0, from.units - 1);
-    from.updateLabel();
 
     this.soldiers.add(Soldier.spawn(this, from.centerX, from.centerY, from, to));
   }
 
   /** Прибуття юніта у вежу */
-  handleArrival(s: Soldier, tower: Tower) {
-    if (!s.active) return;
+  handleArrival(soldier: Soldier, tower: Tower) {
+    if (!soldier.active) return;
 
-    if (tower.owner === s.owner) {
+    if (tower.owner === soldier.owner) {
       // Підкріплення: +1, але не більше 60
       tower.units = Math.min(tower.units + 1, BALANCE.maxUnits);
     } else {
       // Атака: −1, можливе захоплення
       tower.units -= 1;
       if (tower.units < 0) {
-        tower.setOwner(s.owner);
+        tower.setOwner(soldier.owner);
         tower.units = Math.min(Math.abs(tower.units), BALANCE.maxUnits);
       }
     }
     tower.updateLabel();
-    s.destroy();
+    soldier.destroy();
   }
 
   update(_time: number, delta: number) {
@@ -162,11 +163,14 @@ export default class MainScene extends Phaser.Scene {
     }
 
     // прибуття "крапок"
-    this.soldiers.children.each((s: any) => {
-      if (!s.active) return;
-      const tw: Tower = (s as Soldier).targetTower;
-      const d = Phaser.Math.Distance.Between(s.x, s.y, tw.x, tw.y);
-      if (d <= tw.radius - 2) this.handleArrival(s as Soldier, tw);
+    this.soldiers.children.each((soldier: any) => {
+      if (!soldier.active) return;
+
+      const targetTower: Tower = (soldier as Soldier).targetTower;
+      const distance = Phaser.Math.Distance.Between(soldier.x, soldier.y, targetTower.x, targetTower.y);
+      if (distance <= targetTower.radius - 2) {
+        this.handleArrival(soldier as Soldier, targetTower);
+      }
     });
 
     // завершення гри

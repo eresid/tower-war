@@ -51,7 +51,7 @@ export default class Link {
       const t = (i * spacing + this.flowPhase) % len;
       const x = from.centerX + dx * t;
       const y = from.centerY + dy * t;
-      gfx.fillStyle(0x94a3b8, 0.55); // gray with some alpha
+      gfx.fillStyle(0x94a3b8, 0.25); // gray with some alpha
       gfx.fillCircle(x, y, 3);
       gfx.setDepth(ZIndex.Paths);
     }
