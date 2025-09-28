@@ -10,11 +10,7 @@ export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
   links: Link[] = [];
   soldiers!: Phaser.GameObjects.Group;
-
-  obstacles: Obstacle[] = [
-    // приклад — порожньо; додай прямокутники за потреби
-    { x: 240, y: 340, width: 340, height: 24 },
-  ];
+  obstacles: Obstacle[] = [{ x: 240, y: 340, width: 340, height: 24 }];
 
   flowGfx!: Phaser.GameObjects.Graphics;
   obstacleGfx!: Phaser.GameObjects.Graphics;
@@ -27,10 +23,10 @@ export default class MainScene extends Phaser.Scene {
   }
 
   create() {
-    // Load Physics
+    // Loading Physics
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
-    // Load Towers
+    // Loading Towers
     this.towers.push(Tower.spawn(this, 320, 140, Owner.Red, 25));
     this.towers.push(Tower.spawn(this, 160, 340, Owner.Neutral, 5));
     this.towers.push(Tower.spawn(this, 450, 560, Owner.Blue, 19));
@@ -39,31 +35,40 @@ export default class MainScene extends Phaser.Scene {
     this.flowGfx = this.add.graphics();
     this.obstacleGfx = this.add.graphics();
 
-    // перешкоди (оформлення)
+    // Loading Obstacles
     this.drawObstacles();
 
-    // --- Керування кліками ---
+    // Setup Controls
+    this.setupControls();
+
+    // Win or Lose Text
+    this.resultTxt = this.add
+      .text(this.scale.width / 2, 36, "", { fontSize: "22px", color: "#111", fontStyle: "bold" })
+      .setOrigin(0.5);
+  }
+
+  private setupControls() {
     this.input.on("pointerdown", (p: any, targets: any[]) => {
-      const t: Tower | undefined = targets.find((o) => o instanceof Tower);
-      if (!t) return;
+      const tower: Tower | undefined = targets.find((o) => o instanceof Tower);
+      if (!tower) return;
 
       // якщо нічого не вибрано — вибрати
       if (!this.selectedTower) {
-        this.setSelection(t);
+        this.setSelection(tower);
         return;
       }
 
       // якщо натиснули на ту ж — зняти виділення
-      if (this.selectedTower === t) {
+      if (this.selectedTower === tower) {
         this.setSelection(null);
         return;
       }
 
       // є вибір і натиснули на іншу вежу -> почати атаку (створити/увімкнути лінк)
-      if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, t.x, t.y)) {
-        const existing = this.links.find((l) => l.from === this.selectedTower && l.to === t);
+      if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, tower.x, tower.y)) {
+        const existing = this.links.find((l) => l.from === this.selectedTower && l.to === tower);
         if (!existing) {
-          this.links.push(new Link(this, this.selectedTower, t));
+          this.links.push(new Link(this, this.selectedTower, tower));
         } else {
           existing.active = true; // на випадок, якщо колись відключали
         }
@@ -71,10 +76,6 @@ export default class MainScene extends Phaser.Scene {
       // після старту атаки скидаємо вибір
       this.setSelection(null);
     });
-
-    this.resultTxt = this.add
-      .text(this.scale.width / 2, 36, "", { fontSize: "22px", color: "#111", fontStyle: "bold" })
-      .setOrigin(0.5);
   }
 
   private setSelection(tower: Tower | null) {

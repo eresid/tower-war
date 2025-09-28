@@ -1,4 +1,4 @@
-import { Scene } from "phaser";
+import { Geom, Scene } from "phaser";
 import { BALANCE } from "../utils/GameBalance";
 import { Owner, ownerColor } from "../utils/GameHelper";
 
@@ -24,23 +24,50 @@ export default class Tower extends Phaser.GameObjects.Container {
     this.maxUnits = Math.min(maxUnits, BALANCE.maxUnits);
     this.radius = 26;
 
-    this.base = scene.add.arc(0, 0, this.radius + 6, 0, 360, false, 0x000000, 0.06);
-    this.circle = scene.add.arc(0, 0, this.radius, 0, 360, false, ownerColor(owner), 1);
+    // Container size (need for hitArea)
+    this.setSize(this.radius * 2, this.radius * 2);
+
+    // Center of local coordinates
+    const cx = this.width / 2; // = this.radius
+    const cy = this.height / 2; // = this.radius
+
+    // Creating elements with a position in the center of the container
+    this.base = scene.add.arc(cx, cy, this.radius + 6, 0, 360, false, 0x000000, 0.06);
+    this.circle = scene.add.arc(cx, cy, this.radius, 0, 360, false, ownerColor(owner), 1);
     this.circle.setStrokeStyle(3, 0xffffff, 0.9);
+
     this.label = scene.add
-      .text(0, 0, `${this.units}`, { fontSize: "16px", color: "#ffffff", fontStyle: "bold" })
+      .text(cx, cy, `${this.units}`, {
+        fontSize: "18px",
+        color: "#ffffff",
+        fontStyle: "bold",
+      })
       .setOrigin(0.5);
 
-    // кільце виділення (приховане)
-    this.selectRing = scene.add.arc(0, 0, this.radius + 10, 0, 360, false, 0x000000, 0);
-    this.selectRing.setStrokeStyle(3, 0x334155, 0.85);
-    this.selectRing.setVisible(false);
+    // Selection ring (optional)
+    this.selectRing = scene.add
+      .arc(cx, cy, this.radius + 10, 0, 360, false, 0x000000, 0)
+      .setStrokeStyle(3, 0x334155, 0.85)
+      .setVisible(false);
 
     this.add([this.base, this.circle, this.label, this.selectRing]);
     scene.add.existing(this);
 
-    this.setSize(this.radius * 2, this.radius * 2);
-    this.setInteractive(new Phaser.Geom.Circle(0, 0, this.radius + 8), Phaser.Geom.Circle.Contains);
+    const shape = new Geom.Circle(cx * 2, cy * 2, this.radius);
+    this.setInteractive(shape, Geom.Circle.Contains);
+
+    // Just for debug, don't need in production
+    this.on("pointerover", () => {
+      this.circle.setStrokeStyle(3, ownerColor(Owner.Neutral), 1);
+      this.circle.fillColor = ownerColor(Owner.Neutral);
+    });
+
+    // Just for debug, don't need in production
+    this.on("pointerout", () => {
+      console.log("pointerout");
+      this.circle.setStrokeStyle(3, ownerColor(owner), 1);
+      this.circle.fillColor = ownerColor(owner);
+    });
 
     this.lastGen = 0;
   }
@@ -55,7 +82,9 @@ export default class Tower extends Phaser.GameObjects.Container {
   }
 
   updateLabel() {
-    this.label.setText(`${Math.max(0, Math.floor(this.units))}`);
+    const units = Math.max(0, Math.floor(this.units));
+    const unitTxt = units === BALANCE.maxUnits ? "Max" : `${this.units}`;
+    this.label.setText(unitTxt);
   }
 
   tick(delta: number) {
