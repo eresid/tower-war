@@ -42,15 +42,15 @@ jobs:
       # SPA-фікс, щоб клієнтський роутинг працював при перезавантаженні не-існуючих шляхів (Pages віддає 404.html)
       - name: Prepare HTML for Pages
         run: |
-        OUTDIR="dist"
-        if [ -f "$OUTDIR/main.html" ] && [ ! -f "$OUTDIR/index.html" ]; then
-          cp "$OUTDIR/main.html" "$OUTDIR/index.html"
-        fi
-        if [ -f "$OUTDIR/index.html" ]; then
-          cp "$OUTDIR/index.html" "$OUTDIR/404.html"
-        else
-          echo "No index.html or main.html found in $OUTDIR"; exit 1
-        fi
+          OUTDIR="dist"
+          if [ -f "$OUTDIR/main.html" ] && [ ! -f "$OUTDIR/index.html" ]; then
+            cp "$OUTDIR/main.html" "$OUTDIR/index.html"
+          fi
+          if [ -f "$OUTDIR/index.html" ]; then
+            cp "$OUTDIR/index.html" "$OUTDIR/404.html"
+          else
+            echo "No index.html or main.html found in $OUTDIR"; exit 1
+          fi
       # упаковує каталог dist як артефакт для наступної джоби
       - name: Upload dist Artifact
         uses: actions/upload-pages-artifact@v3
