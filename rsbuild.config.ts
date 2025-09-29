@@ -1,6 +1,6 @@
 import { defineConfig } from "@rsbuild/core";
 
-export default defineConfig({
+export default defineConfig(({ env }) => ({
   server: {
     port: 4010,
   },
@@ -12,4 +12,8 @@ export default defineConfig({
       main: "./src/index.ts",
     },
   },
-});
+  output: {
+    assetPrefix: env === "production" ? "./" : "/",
+    distPath: { root: "dist2" },
+  },
+}));
