@@ -1,5 +1,5 @@
 import Phaser, { Geom } from "phaser";
-import { Owner, ZIndex, isEnemy } from "../utils/GameHelper";
+import { Owner, ZIndex, isEnemyForPlayer, isOpponentFor } from "../utils/GameHelper";
 import Tower from "../prefabs/Tower";
 import Link from "../prefabs/Link";
 import Soldier from "../prefabs/Soldier";
@@ -15,6 +15,7 @@ export default class MainScene extends Phaser.Scene {
   obstacles: Obstacle[] = [
     //{ x: 240, y: 340, width: 340, height: 24 }
   ];
+  private aiOwners: Owner[] = [Owner.Red, Owner.Yellow];
 
   flowGfx!: Phaser.GameObjects.Graphics;
   obstacleGfx!: Phaser.GameObjects.Graphics;
@@ -53,6 +54,8 @@ export default class MainScene extends Phaser.Scene {
       .setDepth(ZIndex.UI);
 
     MouseTrailCutter.instance(this, this.links);
+
+    this.time.addEvent({ delay: BALANCE.ai.period, loop: true, callback: () => this.aiTurn() });
   }
 
   private setupControls() {
@@ -68,12 +71,12 @@ export default class MainScene extends Phaser.Scene {
       if (!tower) return;
 
       // If there is no selected tower and we click on the enemy - do nothing
-      if (!this.selectedTower && isEnemy(tower.owner)) {
+      if (!this.selectedTower && isEnemyForPlayer(tower.owner)) {
         return;
       }
 
       // If there is no selected tower, and we click on our own tower, we select it
-      if (!this.selectedTower && !isEnemy(tower.owner)) {
+      if (!this.selectedTower && !isEnemyForPlayer(tower.owner)) {
         this.setSelection(tower);
         return;
       }
@@ -84,14 +87,14 @@ export default class MainScene extends Phaser.Scene {
       }
 
       // If there is a selected tower, and we click on another own tower - support this tower
-      if (this.selectedTower && !isEnemy(tower.owner)) {
+      if (this.selectedTower && !isEnemyForPlayer(tower.owner)) {
         addLinkWithCancelReverse(this, this.links, this.selectedTower, tower);
         this.setSelection(null);
         return;
       }
 
       // If there is a selected tower and we click on the enemy tower, we attack it
-      if (this.selectedTower && isEnemy(tower.owner)) {
+      if (this.selectedTower && isEnemyForPlayer(tower.owner)) {
         if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, tower.x, tower.y)) {
           console.log("WE CAN ATTACK :)");
           const existing = this.links.find((l) => l.from === this.selectedTower && l.to === tower);
@@ -203,6 +206,34 @@ export default class MainScene extends Phaser.Scene {
     for (const ob of this.obstacles) {
       this.obstacleGfx.fillRect(ob.x, ob.y, ob.width, ob.height);
       this.obstacleGfx.strokeRect(ob.x, ob.y, ob.width, ob.height);
+    }
+  }
+
+  private aiTurn() {
+    for (const ai of this.aiOwners) {
+      // мої вежі з достатньою кількістю юнітів
+      const mine = this.towers.filter((t) => t.owner === ai && t.units >= BALANCE.ai.sendThreshold);
+      if (mine.length === 0) continue;
+
+      const from = Phaser.Utils.Array.GetRandom(mine);
+
+      // цілі: всі НЕ мої (включно з нейтралами і іншим AI)
+      const targets = this.towers.filter((t) => isOpponentFor(ai, t.owner));
+      if (targets.length === 0) continue;
+
+      // вибір пріоритетної цілі: ближче + менше юнітів
+      const to = targets
+        .map((t) => ({
+          t,
+          score: Phaser.Math.Distance.Between(from.x, from.y, t.x, t.y) * 0.02 + t.units,
+        }))
+        .sort((a, b) => a.score - b.score)[0].t;
+
+      if (!this.isClearPath(from.x, from.y, to.x, to.y)) continue;
+
+      // створюємо лінк, якщо його ще немає
+      const exists = this.links.some((l) => l.from === from && l.to === to);
+      if (!exists) this.links.push(new Link(this, from, to));
     }
   }
 }
