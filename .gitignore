@@ -4,6 +4,7 @@
 # Build files
 /node_modules
 /build
+/dist
 /coverage
 package-lock.json
 

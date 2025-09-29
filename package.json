@@ -1,7 +1,7 @@
 {
   "name": "tower-war-clone",
   "description": "Tower War Clone Game built on Phaser.js ",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Yevhen Sakara & OmiSoft.net Team",
   "license": "MIT",
   "scripts": {

@@ -1,0 +1,62 @@
+# просто назва пайплайна в GitHub Actions
+name: Tower War Clone
+
+on:
+  # запускається на кожен пуш у main
+  push:
+    branches: [main]
+  # можна запустити вручну з вкладки Actions
+  workflow_dispatch:
+
+permissions:
+  # читати репозиторій
+  contents: read
+  # потрібні для деплою на GitHub Pages через офіційні екшени
+  pages: write
+  id-token: write
+
+# гарантує, що одночасно працює лише один деплой Pages; попередній скасовується
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # середовище
+    runs-on: ubuntu-latest
+    steps:
+      # тягне код
+      - uses: actions/checkout@v4
+      # ставить Node.js 22
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # це пришвидшить інсталяцію — кешується ~/.npm за package-lock.json
+          cache: "npm"
+      # чиста інсталяція залежностей
+      - run: npm ci
+      # ВАЖЛИВО: на GitHub Pages сайт зазвичай живе під /<repo>/
+      # Тому або робимо відносні шляхи, або задаємо префікс.
+      # Це критично для GitHub Pages з типом Project Pages.
+      # - run: npm run build -- --asset-prefix ./
+      # SPA-фікс: копіюємо index.html в 404.html для клієнтського роутингу
+      # SPA-фікс, щоб клієнтський роутинг працював при перезавантаженні не-існуючих шляхів (Pages віддає 404.html)
+      - run: cp dist/index.html dist/404.html
+      # упаковує каталог dist як артефакт для наступної джоби
+      - name: Upload dist Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    # чекає завершення збірки
+    needs: build
+    runs-on: ubuntu-latest
+    # так GitHub підв’язує URL сторінки
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # бере попередній артефакт і розгортає його в GitHub Pages
+      - id: deployment
+        uses: actions/deploy-pages@v4
