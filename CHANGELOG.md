@@ -2,7 +2,10 @@
 
 ## 0.2 (xx.xx.2025)
 
-- [ ] Win Game
+- [x] Production Build + Deploy to GitHub Pages
+- [x] Win or Lose Game Check
+- [ ] Basic AI
+- [ ] Maximum number of attacks, depending on the size of the tower
 
 ## 0.1 (28.09.2025)
 

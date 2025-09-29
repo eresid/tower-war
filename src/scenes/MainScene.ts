@@ -55,6 +55,13 @@ export default class MainScene extends Phaser.Scene {
   }
 
   private setupControls() {
+    if (this.input.keyboard) {
+      const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      spaceKey.on("down", () => {
+        console.log("The Space clicked!");
+      });
+    }
+
     this.input.on("pointerdown", (p: any, targets: any[]) => {
       const tower: Tower | undefined = targets.find((o) => o instanceof Tower);
       if (!tower) return;
@@ -67,6 +74,11 @@ export default class MainScene extends Phaser.Scene {
       // If there is no selected tower, and we click on our own tower, we select it
       if (!this.selectedTower && !isEnemy(tower.owner)) {
         this.setSelection(tower);
+        return;
+      }
+
+      if (this.selectedTower && tower === this.selectedTower) {
+        this.setSelection(null);
         return;
       }
 
@@ -138,16 +150,17 @@ export default class MainScene extends Phaser.Scene {
     if (!soldier.active) return;
 
     if (tower.owner === soldier.owner) {
-      // Підкріплення: +1, але не більше 60
+      // Reinforcement: +1, but no more than BALANCE.maxUnits
       tower.units = Math.min(tower.units + 1, BALANCE.maxUnits);
     } else {
-      // Атака: −1, можливе захоплення
+      // Attack: −1, possible tower capture
       tower.units -= 1;
       if (tower.units < 0) {
         tower.setOwner(soldier.owner);
-        tower.units = Math.min(Math.abs(tower.units), BALANCE.maxUnits);
+        tower.units = 1;
       }
     }
+
     tower.updateLabel();
     soldier.destroy();
   }
@@ -162,22 +175,25 @@ export default class MainScene extends Phaser.Scene {
       link.draw(this.flowGfx);
     }
 
-    // прибуття "крапок"
-    this.soldiers.children.each((soldier: any) => {
+    // Arrival of the soldier at the tower
+    const soldiers = this.soldiers.getChildren() as Soldier[];
+    soldiers.forEach((soldier) => {
       if (!soldier.active) return;
+      if (soldier.destroyIfOutOfBounds(this)) return;
 
       const targetTower: Tower = (soldier as Soldier).targetTower;
-      const distance = Phaser.Math.Distance.Between(soldier.x, soldier.y, targetTower.x, targetTower.y);
-      if (distance <= targetTower.radius - 2) {
+
+      const distance = Phaser.Math.Distance.Between(soldier.x, soldier.y, targetTower.centerX, targetTower.centerY);
+      if (distance <= targetTower.radius) {
         this.handleArrival(soldier as Soldier, targetTower);
       }
     });
 
-    // завершення гри
+    // Game Over Check
     const owners = new Set(this.towers.map((t) => t.owner));
     if (owners.size === 1) {
       const w = owners.values().next().value as Owner;
-      this.resultTxt.setText(w === Owner.Blue ? "Перемога! 🎉" : "Поразка 🙈");
+      this.resultTxt.setText(w === Owner.Blue ? "You won! 🎉" : "You lost 🙈");
     } else {
       this.resultTxt.setText("");
     }

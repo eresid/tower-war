@@ -30,4 +30,20 @@ export default class Soldier extends Phaser.GameObjects.Arc {
     (this.body as Physics.Arcade.Body).setCircle(6);
     this.setDepth(ZIndex.Soldiers);
   }
+
+  destroyIfOutOfBounds(scene: Scene): boolean {
+    const camera = scene.cameras.main;
+
+    if (
+      this.x < camera.worldView.x - 50 || // left
+      this.x > camera.worldView.x + camera.worldView.width + 50 || // right
+      this.y < camera.worldView.y - 50 || // top
+      this.y > camera.worldView.y + camera.worldView.height + 50 // bottom
+    ) {
+      this.destroy();
+      return true;
+    }
+
+    return false;
+  }
 }
