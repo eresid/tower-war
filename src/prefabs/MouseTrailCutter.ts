@@ -35,10 +35,6 @@ export interface MouseTrailCutterOptions {
   minPointDist?: number;
   /** глибина рендера (depth) */
   depth?: number;
-  /** показувати «іскру» у місці перетину */
-  spark?: boolean;
-  /** колір іскри */
-  sparkColor?: number;
 }
 
 /** Допоміжна: центр контейнера у світових координатах */
@@ -77,8 +73,6 @@ export default class MouseTrailCutter {
         maxPoints: 20,
         minPointDist: 8,
         depth: 200, // поверх усього UI
-        spark: true,
-        sparkColor: 0x16a34a,
       }
     );
 
@@ -114,8 +108,6 @@ export default class MouseTrailCutter {
       maxPoints: opts.maxPoints ?? 32,
       minPointDist: opts.minPointDist ?? 10,
       depth: opts.depth ?? 120,
-      spark: opts.spark ?? true,
-      sparkColor: opts.sparkColor ?? 0xff6b6b,
     };
 
     this.gfx = scene.add.graphics().setDepth(this.opts.depth);
@@ -203,7 +195,6 @@ export default class MouseTrailCutter {
 
         if (Phaser.Geom.Intersects.LineToLine(seg, linkLine)) {
           const p = MouseTrailCutter.getLineIntersectionPoint(seg, linkLine);
-          if (this.opts.spark && p) this.spark(p.x, p.y);
           this.onCut(link, p ?? undefined);
         }
       }
@@ -216,22 +207,6 @@ export default class MouseTrailCutter {
     this.isActive = false;
     this.points.length = 0;
     this.gfx.clear();
-  }
-
-  /** Маленька іскра у місці перетину */
-  private spark(x: number, y: number) {
-    const g = this.scene.add.graphics().setDepth(this.opts.depth + 1);
-    g.fillStyle(this.opts.sparkColor, 0.95);
-    g.fillCircle(x, y, 6);
-    g.lineStyle(2, 0xffffff, 0.9);
-    g.strokeCircle(x, y, 9);
-    this.scene.tweens.add({
-      targets: g,
-      alpha: 0,
-      scale: 1.35,
-      duration: 420,
-      onComplete: () => g.destroy(),
-    });
   }
 
   /** Обчислити точку перетину двох ліній-ВІДРІЗКІВ */

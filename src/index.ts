@@ -8,7 +8,7 @@ const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: "#eaf6ff",
   physics: {
     default: "arcade",
-    arcade: { debug: true },
+    arcade: { debug: false },
   },
   scene: [MainScene],
   scale: {

@@ -62,19 +62,6 @@ export default class Tower extends Phaser.GameObjects.Container {
     const shape = new Geom.Circle(cx * 2, cy * 2, this.radius);
     this.setInteractive(shape, Geom.Circle.Contains);
 
-    // Just for debug, don't need in production
-    this.on("pointerover", () => {
-      this.circle.setStrokeStyle(3, ownerColor(Owner.Neutral), 1);
-      this.circle.fillColor = ownerColor(Owner.Neutral);
-    });
-
-    // Just for debug, don't need in production
-    this.on("pointerout", () => {
-      console.log("pointerout");
-      this.circle.setStrokeStyle(3, ownerColor(owner), 1);
-      this.circle.fillColor = ownerColor(owner);
-    });
-
     this.lastGen = 0;
   }
 
