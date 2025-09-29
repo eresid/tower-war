@@ -6,6 +6,7 @@ import Soldier from "../prefabs/Soldier";
 import { BALANCE } from "../utils/GameBalance";
 import { Obstacle } from "../prefabs/Obstacle";
 import MouseTrailCutter from "../prefabs/MouseTrailCutter";
+import { addLinkWithCancelReverse } from "../utils/LinksHelper";
 
 export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
@@ -84,13 +85,7 @@ export default class MainScene extends Phaser.Scene {
 
       // If there is a selected tower, and we click on another own tower - support this tower
       if (this.selectedTower && !isEnemy(tower.owner)) {
-        const existing = this.links.find((l) => l.from === this.selectedTower && l.to === tower);
-        if (!existing) {
-          this.links.push(new Link(this, this.selectedTower, tower));
-        } else {
-          existing.active = true; // на випадок, якщо колись відключали
-        }
-
+        addLinkWithCancelReverse(this, this.links, this.selectedTower, tower);
         this.setSelection(null);
         return;
       }
