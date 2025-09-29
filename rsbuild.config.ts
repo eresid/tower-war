@@ -14,6 +14,6 @@ export default defineConfig(({ env }) => ({
   },
   output: {
     assetPrefix: env === "production" ? "./" : "/",
-    distPath: { root: "dist2" },
+    distPath: { root: "dist" },
   },
 }));

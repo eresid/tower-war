@@ -6,7 +6,6 @@
 /build
 /dist
 /coverage
-package-lock.json
 
 # MacOS trash
 .DS_Store
