@@ -38,7 +38,7 @@ jobs:
       # ВАЖЛИВО: на GitHub Pages сайт зазвичай живе під /<repo>/
       # Тому або робимо відносні шляхи, або задаємо префікс.
       # Це критично для GitHub Pages з типом Project Pages.
-      # - run: npm run build -- --asset-prefix ./
+      - run: npm run build
       # SPA-фікс, щоб клієнтський роутинг працював при перезавантаженні не-існуючих шляхів (Pages віддає 404.html)
       - name: Prepare HTML for Pages
         run: |
