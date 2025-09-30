@@ -202,6 +202,8 @@ export default class MainScene extends Phaser.Scene {
       if (tower.units < 0) {
         tower.setOwner(soldier.owner);
         tower.units = 1;
+
+        this.stopAllAttacksFrom(tower, true);
       }
     }
 
@@ -382,5 +384,27 @@ export default class MainScene extends Phaser.Scene {
     const len2 = vx * vx + vy * vy || 1;
     const t = (wx * vx + wy * vy) / len2;
     return Phaser.Math.Clamp(t, 0, 1);
+  }
+
+  /** Зупиняє всі вихідні атаки (лінки) з вежі.
+   *  Якщо killProjectiles=true — знищує солдатів, випущених цією вежею.
+   */
+  private stopAllAttacksFrom(tower: Tower, killProjectiles = true) {
+    // прибрати вихідні лінки
+    this.links = this.links.filter((l) => l.from !== tower);
+
+    // (опційно) прибрати «кульки», випущені цією вежею
+    if (killProjectiles) {
+      for (const obj of this.soldiers.getChildren() as Phaser.GameObjects.GameObject[]) {
+        const s = obj as Soldier;
+        if (!s.active) continue;
+        if (s.sourceTower === tower) s.destroy();
+      }
+    }
+
+    // оновити індикатор слотів (якщо використовуєш UI атак)
+    if (typeof (tower as any).updateAttackSlots === "function") {
+      refreshTowerAttackUI(this.links, tower);
+    }
   }
 }
