@@ -19,8 +19,8 @@ export default class Link {
 
   /** Чим більше юнітів у джерелі — тим швидше тече */
   getInterval() {
-    const u = Math.max(0, this.from.units);
-    const factor = 1 / (0.3 + u / BALANCE.maxUnits); // 0.3..~3.3
+    const units = Math.max(0, this.from.units);
+    const factor = 1 / (0.3 + units / BALANCE.maxUnits); // 0.3..~3.3
     return Phaser.Math.Clamp(BALANCE.baseInterval * factor, BALANCE.minInterval, BALANCE.baseInterval * 2.2);
   }
 

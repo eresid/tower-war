@@ -6,7 +6,7 @@ import Soldier from "../prefabs/Soldier";
 import { BALANCE } from "../utils/GameBalance";
 import { Obstacle } from "../prefabs/Obstacle";
 import MouseTrailCutter from "../prefabs/MouseTrailCutter";
-import { addLinkWithCancelReverse } from "../utils/LinksHelper";
+import { addLinkWithCancelReverse, pickPrimaryTarget } from "../utils/LinksHelper";
 
 export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
@@ -143,13 +143,43 @@ export default class MainScene extends Phaser.Scene {
     this.soldiers.add(Soldier.spawn(this, from.centerX, from.centerY, from, to));
   }
 
-  /** Прибуття юніта у вежу */
+  /** Переслати солдата далі: знищує вхідного і випускає нового у напрямку цілі */
+  forwardSoldier(from: Tower, to: Tower) {
+    // випускаємо нового, не змінюючи лічильник у вежі (вона і так на максимумі)
+    const s = new Soldier(this, from.center.x, from.center.y, from, to);
+    this.soldiers.add(s);
+    const ang = Phaser.Math.Angle.Between(from.center.x, from.center.y, to.center.x, to.center.y);
+    (s.body as Phaser.Physics.Arcade.Body).setVelocity(
+      Math.cos(ang) * BALANCE.moveSpeed,
+      Math.sin(ang) * BALANCE.moveSpeed
+    );
+  }
+
+  // Processing the arrival of a soldier to the tower
   handleArrival(soldier: Soldier, tower: Tower) {
     if (!soldier.active) return;
 
     if (tower.owner === soldier.owner) {
-      // Reinforcement: +1, but no more than BALANCE.maxUnits
-      tower.units = Math.min(tower.units + 1, BALANCE.maxUnits);
+      // СВОЯ: якщо кап ще не досягнуто — додаємо 1
+      if (tower.units < BALANCE.maxUnits) {
+        // Reinforcement: +1, but no more than BALANCE.maxUnits
+        tower.units = Math.min(tower.units + 1, BALANCE.maxUnits);
+        tower.updateLabel();
+        soldier.destroy();
+        return;
+      }
+
+      // КАП досягнуто: якщо ця вежа когось атакує — переслати солдата далі
+      const target = pickPrimaryTarget(this.links, tower);
+      if (target && this.isClearPath(tower.x, tower.y, target.x, target.y)) {
+        this.forwardSoldier(tower, target);
+        soldier.destroy();
+        // tower.units НЕ змінюємо (вежа повна)
+        return;
+      }
+
+      // Якщо немає активної цілі — просто поглинаємо (залишаємось на максимумі)
+      // (за бажанням можна відправити на найближчого ворога/нейтрала)
     } else {
       // Attack: −1, possible tower capture
       tower.units -= 1;
@@ -172,6 +202,9 @@ export default class MainScene extends Phaser.Scene {
       link.update(delta);
       link.draw(this.flowGfx);
     }
+
+    // Зіткнення солдатів
+    this.resolveSoldierMeetings();
 
     // Arrival of the soldier at the tower
     const soldiers = this.soldiers.getChildren() as Soldier[];
@@ -235,5 +268,101 @@ export default class MainScene extends Phaser.Scene {
       const exists = this.links.some((l) => l.from === from && l.to === to);
       if (!exists) this.links.push(new Link(this, from, to));
     }
+  }
+
+  private resolveSoldierMeetings() {
+    type Bucket = {
+      A: Tower;
+      B: Tower;
+      Apos: Phaser.Math.Vector2;
+      Bpos: Phaser.Math.Vector2;
+      forward: Soldier[];
+      backward: Soldier[];
+    };
+    const buckets = new Map<string, Bucket>();
+
+    // Розкладаємо солдатів по “ребрах” (незорієнтовано)
+    const objs = this.soldiers.getChildren() as Phaser.GameObjects.GameObject[];
+    for (const obj of objs) {
+      const s = obj as Soldier;
+      if (!s.active) continue;
+
+      const key = this.edgeKeyUndirected(s.sourceTower, s.targetTower);
+      let b = buckets.get(key);
+      if (!b) {
+        const Apos = s.sourceTower.center;
+        const Bpos = s.targetTower.center;
+        // нормалізуємо напрям: forward = від меншого ключа до більшого
+        const edgeKey = this.edgeKeyUndirected(s.sourceTower, s.targetTower);
+        const sortedAB = edgeKey.split("|").map((k) => k.split(",").map(Number)); // [[ax,ay],[bx,by]]
+        const [sx, sy] = sortedAB[0];
+        const [tx, ty] = sortedAB[1];
+
+        // визначимо A/B як ті вежі, чий центр збігається з sortedAB[0]/[1]
+        const centerS = s.sourceTower.center;
+        const same = (p: Phaser.Math.Vector2, x: number, y: number) =>
+          Math.abs(p.x - x) < 0.6 && Math.abs(p.y - y) < 0.6;
+        const A = same(centerS, sx, sy) ? s.sourceTower : s.targetTower;
+        const B = A === s.sourceTower ? s.targetTower : s.sourceTower;
+
+        b = { A, B, Apos: A.center, Bpos: B.center, forward: [], backward: [] };
+        buckets.set(key, b);
+      }
+
+      // напрямок: forward = рух від A до B
+      const isForward = s.sourceTower === b.A && s.targetTower === b.B;
+      (isForward ? b.forward : b.backward).push(s);
+    }
+
+    // Для кожного ребра — зіставляємо найближчі назустріч
+    const meetPx = 12; // радіуси ~6, беремо невеликий зазор
+    for (const b of buckets.values()) {
+      if (b.forward.length === 0 || b.backward.length === 0) continue;
+
+      // Обчислити прогрес t кожного солдата і відсортувати
+      const fw = b.forward
+        .map((s) => ({ s, t: this.progressAlongEdge(new Phaser.Math.Vector2(s.x, s.y), b.Apos, b.Bpos) }))
+        .sort((a, b2) => a.t - b2.t);
+      const bw = b.backward
+        .map((s) => ({ s, t: this.progressAlongEdge(new Phaser.Math.Vector2(s.x, s.y), b.Apos, b.Bpos) }))
+        .sort((a, b2) => a.t - b2.t);
+
+      // Два вказівники з протилежних кінців: fw зліва->праворуч, bw справа->ліворуч
+      let i = 0,
+        j = bw.length - 1;
+      const edgeLen = Phaser.Math.Distance.Between(b.Apos.x, b.Apos.y, b.Bpos.x, b.Bpos.y);
+
+      while (i < fw.length && j >= 0) {
+        const dAlong = Math.abs(fw[i].t - bw[j].t) * edgeLen;
+        if (dAlong <= meetPx) {
+          // самознищення пари
+          fw[i].s.destroy();
+          bw[j].s.destroy();
+          i++;
+          j--;
+        } else {
+          // підсуваємо той, хто ближче до центру
+          if (fw[i].t < 1 - bw[j].t) i++;
+          else j--;
+        }
+      }
+    }
+  }
+
+  private edgeKeyUndirected(a: Tower, b: Tower): string {
+    const k1 = `${a.centerX.toFixed(1)},${a.centerY.toFixed(1)}`;
+    const k2 = `${b.centerX.toFixed(1)},${b.centerY.toFixed(1)}`;
+    return k1 < k2 ? `${k1}|${k2}` : `${k2}|${k1}`;
+  }
+
+  private progressAlongEdge(pos: Phaser.Math.Vector2, A: Phaser.Math.Vector2, B: Phaser.Math.Vector2): number {
+    // t у [0..1] вздовж відрізка AB
+    const vx = B.x - A.x,
+      vy = B.y - A.y;
+    const wx = pos.x - A.x,
+      wy = pos.y - A.y;
+    const len2 = vx * vx + vy * vy || 1;
+    const t = (wx * vx + wy * vy) / len2;
+    return Phaser.Math.Clamp(t, 0, 1);
   }
 }

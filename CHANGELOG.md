@@ -6,6 +6,8 @@
 - [x] Win or Lose Game Check
 - [x] Basic AI
 - [ ] Maximum number of attacks, depending on the size of the tower
+- [x] Soldiers can attack each other
+- [ ] Sending a soldier further if the tower is full
 
 ## 0.1 (28.09.2025)
 

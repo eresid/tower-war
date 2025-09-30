@@ -5,6 +5,7 @@ import { BALANCE } from "../utils/GameBalance";
 
 export default class Soldier extends Phaser.GameObjects.Arc {
   targetTower: Tower;
+  sourceTower: Tower;
   owner: Owner;
 
   static spawn(scene: Scene, x: number, y: number, from: Tower, to: Tower): Soldier {
@@ -21,6 +22,7 @@ export default class Soldier extends Phaser.GameObjects.Arc {
 
   constructor(scene: Scene, x: number, y: number, from: Tower, to: Tower) {
     super(scene, x, y, 6, 0, 360, false, ownerColor(from.owner), 1); // радіус збільшено: 6
+    this.sourceTower = from;
     this.targetTower = to;
     this.owner = from.owner;
 

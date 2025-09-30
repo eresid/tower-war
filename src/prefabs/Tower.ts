@@ -14,6 +14,7 @@ export default class Tower extends Phaser.GameObjects.Container {
   lastGen: number;
   centerX: number;
   centerY: number;
+  center: Phaser.Math.Vector2;
 
   static spawn(scene: Scene, x: number, y: number, owner: Owner, units: number, max?: number): Tower {
     return new Tower(scene, x, y, owner, units, max || BALANCE.maxUnits);
@@ -36,6 +37,7 @@ export default class Tower extends Phaser.GameObjects.Container {
 
     this.centerX = this.x + cx;
     this.centerY = this.y + cy;
+    this.center = new Phaser.Math.Vector2(this.centerX, this.centerY);
 
     // Creating elements with a position in the center of the container
     this.base = scene.add.arc(cx, cy, this.radius + 6, 0, 360, false, 0x000000, 0.06);
