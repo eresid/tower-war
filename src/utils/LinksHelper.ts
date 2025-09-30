@@ -28,6 +28,26 @@ const hasReverseActiveLink = (links: Link[], link: Link): boolean => {
   return links.some((l) => l !== link && l.active && l.from === link.to && l.to === link.from);
 };
 
+/** Скільки одночасних цілей дозволено для даної кількості юнітів */
+const calcMaxTargets = (units: number): number => {
+  if (units >= 30) return 3;
+  if (units >= 10) return 2;
+  return 1;
+};
+
+const canAttackMore = (links: Link[], from: Tower) => {
+  const maxAllowed = calcMaxTargets(from.units);
+  const outs = getActiveOutgoingLinks(links, from);
+  return maxAllowed > outs.length;
+};
+
+/** Оновити індикатор атак на вежі (викликаємо щокадру або при зміні юнітів/лінків) */
+const refreshTowerAttackUI = (links: Link[], tower: Tower) => {
+  const maxAllowed = calcMaxTargets(tower.units);
+  const used = getActiveOutgoingLinks(links, tower).length;
+  tower.updateAttackSlots(maxAllowed, used);
+};
+
 /** Активні вихідні лінки з даної вежі */
 const getActiveOutgoingLinks = (links: Link[], from: Tower): Link[] => {
   return links.filter((l) => l.active && l.from === from);
@@ -50,4 +70,11 @@ const pickPrimaryTarget = (links: Link[], from: Tower): Tower | null => {
   return outs[0].to;
 };
 
-export { addLinkWithCancelReverse, hasReverseActiveLink, pickPrimaryTarget };
+export {
+  findLink,
+  addLinkWithCancelReverse,
+  hasReverseActiveLink,
+  pickPrimaryTarget,
+  canAttackMore,
+  refreshTowerAttackUI,
+};

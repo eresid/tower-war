@@ -6,7 +6,13 @@ import Soldier from "../prefabs/Soldier";
 import { BALANCE } from "../utils/GameBalance";
 import { Obstacle } from "../prefabs/Obstacle";
 import MouseTrailCutter from "../prefabs/MouseTrailCutter";
-import { addLinkWithCancelReverse, pickPrimaryTarget } from "../utils/LinksHelper";
+import {
+  addLinkWithCancelReverse,
+  canAttackMore,
+  findLink,
+  pickPrimaryTarget,
+  refreshTowerAttackUI,
+} from "../utils/LinksHelper";
 
 export default class MainScene extends Phaser.Scene {
   towers: Tower[] = [];
@@ -32,10 +38,10 @@ export default class MainScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
     // Loading Towers
-    this.towers.push(Tower.spawn(this, 320, 140, Owner.Red, 25));
+    this.towers.push(Tower.spawn(this, 320, 140, Owner.Red, 1));
     this.towers.push(Tower.spawn(this, 160, 340, Owner.Neutral, 5));
-    this.towers.push(Tower.spawn(this, 450, 560, Owner.Blue, 19));
-    this.towers.push(Tower.spawn(this, 0, 0, Owner.Blue, 19));
+    this.towers.push(Tower.spawn(this, 450, 560, Owner.Blue, 5));
+    this.towers.push(Tower.spawn(this, 0, 0, Owner.Blue, 5));
 
     this.soldiers = this.add.group();
     this.flowGfx = this.add.graphics();
@@ -88,7 +94,10 @@ export default class MainScene extends Phaser.Scene {
 
       // If there is a selected tower, and we click on another own tower - support this tower
       if (this.selectedTower && !isEnemyForPlayer(tower.owner)) {
-        addLinkWithCancelReverse(this, this.links, this.selectedTower, tower);
+        if (canAttackMore(this.links, this.selectedTower)) {
+          addLinkWithCancelReverse(this, this.links, this.selectedTower, tower);
+        }
+
         this.setSelection(null);
         return;
       }
@@ -96,21 +105,28 @@ export default class MainScene extends Phaser.Scene {
       // If there is a selected tower and we click on the enemy tower, we attack it
       if (this.selectedTower && isEnemyForPlayer(tower.owner)) {
         if (this.isClearPath(this.selectedTower.x, this.selectedTower.y, tower.x, tower.y)) {
-          console.log("WE CAN ATTACK :)");
-          const existing = this.links.find((l) => l.from === this.selectedTower && l.to === tower);
-          if (!existing) {
-            this.links.push(new Link(this, this.selectedTower, tower));
-          } else {
-            existing.active = true; // на випадок, якщо колись відключали
-          }
-        } else {
-          console.log("WE CANNOT ATTACK :(");
+          this.attackIfPossible(this.selectedTower, tower);
         }
       }
 
       // After the attack starts, we reset the selection
       this.setSelection(null);
     });
+  }
+
+  private attackIfPossible(from: Tower, to: Tower) {
+    const canAttack = canAttackMore(this.links, from);
+    if (!canAttack) {
+      this.setSelection(null);
+      return;
+    }
+
+    const existing = findLink(this.links, from, to);
+    if (!existing) {
+      this.links.push(new Link(this, from, to));
+    } else {
+      existing.active = true; // на випадок, якщо колись відключали
+    }
   }
 
   private setSelection(tower: Tower | null) {
@@ -194,7 +210,10 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
-    for (const t of this.towers) t.tick(delta);
+    for (const tower of this.towers) {
+      tower.tick(delta);
+      refreshTowerAttackUI(this.links, tower);
+    }
 
     // апдейт лінків + промальовка напрямку
     this.flowGfx.clear();
@@ -265,8 +284,7 @@ export default class MainScene extends Phaser.Scene {
       if (!this.isClearPath(from.x, from.y, to.x, to.y)) continue;
 
       // створюємо лінк, якщо його ще немає
-      const exists = this.links.some((l) => l.from === from && l.to === to);
-      if (!exists) this.links.push(new Link(this, from, to));
+      this.attackIfPossible(from, to);
     }
   }
 
