@@ -1,13 +1,20 @@
 # CHANGELOG
 
-## 0.2 (xx.xx.2025)
+## 0.3 (xx.xx.2025)
+
+- [ ] Load Level form JSON
+- [ ] Sending a soldier further if the tower is full
+- [ ] Dont attack own solriers
+- [ ] Stop all tower attacks if it is captured
+- [ ] Soldiers don't always attack other soldiers
+
+## 0.2 (30.09.2025)
 
 - [x] Production Build + Deploy to GitHub Pages
 - [x] Win or Lose Game Check
 - [x] Basic AI
 - [x] Maximum number of attacks, depending on the size of the tower
 - [x] Soldiers can attack each other
-- [ ] Sending a soldier further if the tower is full
 
 ## 0.1 (28.09.2025)
 
