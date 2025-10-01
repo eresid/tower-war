@@ -1,6 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import Link from "./Link";
-import { Owner } from "../utils/GameHelper";
+import { isPlayer } from "../utils/GameHelper";
 
 /** Мінімальний контракт "лінка" — зв'язок між двома вежами */
 export interface LinkLike {
@@ -58,21 +58,17 @@ export function centerWorld(obj: {
  * — по mouseup: знаходить усі лінки, що перетнулись з відрізками трейлу, і передає їх у onCut
  */
 export default class MouseTrailCutter {
-  static instance(scene: Scene, links: Link[], player: Owner): MouseTrailCutter {
-    const canCut = (link: LinkLike) => {
-      const real = link as Link;
-      const fromOwner = (real.from as any)?.owner;
-      return fromOwner === player;
-    };
-
+  static instance(scene: Scene, getLinks: () => Link[]): MouseTrailCutter {
     return new MouseTrailCutter(
       scene,
       // getLinks: повертає масив LinkLike
-      () => links as LinkLike[],
+      () => getLinks() as unknown as LinkLike[],
       // onCut: що робити з перетнутим лінком
       (link) => {
-        const idx = links.indexOf(link as any);
-        if (idx >= 0) links.splice(idx, 1); // видаляємо лінк
+        const realLink = link as unknown as Link;
+        const links = getLinks();
+        const idx = links.indexOf(realLink);
+        if (idx >= 0) links.splice(idx, 1);
       },
       {
         strokeWidth: 4,
@@ -81,7 +77,7 @@ export default class MouseTrailCutter {
         maxPoints: 20,
         minPointDist: 8,
         depth: 200, // поверх усього UI
-        canCut,
+        canCut: (link) => isPlayer((link as any).from.owner),
       }
     );
   }

@@ -59,7 +59,7 @@ export default class MainScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(ZIndex.UI);
 
-    MouseTrailCutter.instance(this, this.links, Owner.Blue);
+    MouseTrailCutter.instance(this, () => this.links);
 
     this.time.addEvent({ delay: BALANCE.ai.period, loop: true, callback: () => this.aiTurn() });
   }
