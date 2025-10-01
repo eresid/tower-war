@@ -26,10 +26,14 @@ const isEnemy = (owner: Owner): boolean => {
   return owner !== Owner.Blue;
 };
 
+const isPlayer = (owner: Owner): boolean => {
+  return owner === Owner.Blue;
+};
+
 // Ворог лише з точки зору гравця (синього)
 const isEnemyForPlayer = (o: Owner) => o !== Owner.Blue && o !== Owner.Neutral;
 
 // Чи є ціль суперником для конкретного власника (AI теж користується)
 const isOpponentFor = (attacker: Owner, defender: Owner) => attacker !== defender;
 
-export { Owner, ZIndex, ownerColor, isEnemy, isEnemyForPlayer, isOpponentFor };
+export { Owner, ZIndex, ownerColor, isEnemy, isPlayer, isEnemyForPlayer, isOpponentFor };

@@ -3,9 +3,10 @@
 ## 0.3 (xx.xx.2025)
 
 - [ ] Load Level form JSON
-- [ ] Sending a soldier further if the tower is full
-- [ ] Dont attack own solriers
-- [ ] Stop all tower attacks if it is captured
+- [x] The player cannot cancel an enemy attack with a swipe.
+- [x] Sending a soldier further if the tower is full
+- [ ] Dont attack own soldiers
+- [x] Stop all tower attacks if it is captured
 - [ ] Soldiers don't always attack other soldiers
 
 ## 0.2 (30.09.2025)

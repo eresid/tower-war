@@ -1,5 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import Link from "./Link";
+import { Owner } from "../utils/GameHelper";
 
 /** Мінімальний контракт "лінка" — зв'язок між двома вежами */
 export interface LinkLike {
@@ -35,6 +36,7 @@ export interface MouseTrailCutterOptions {
   minPointDist?: number;
   /** глибина рендера (depth) */
   depth?: number;
+  canCut?: (link: LinkLike) => boolean;
 }
 
 /** Допоміжна: центр контейнера у світових координатах */
@@ -56,11 +58,17 @@ export function centerWorld(obj: {
  * — по mouseup: знаходить усі лінки, що перетнулись з відрізками трейлу, і передає їх у onCut
  */
 export default class MouseTrailCutter {
-  static instance(scene: Scene, links: Link[]): MouseTrailCutter {
-    const cutter = new MouseTrailCutter(
+  static instance(scene: Scene, links: Link[], player: Owner): MouseTrailCutter {
+    const canCut = (link: LinkLike) => {
+      const real = link as Link;
+      const fromOwner = (real.from as any)?.owner;
+      return fromOwner === player;
+    };
+
+    return new MouseTrailCutter(
       scene,
       // getLinks: повертає масив LinkLike
-      () => links as unknown as LinkLike[],
+      () => links as LinkLike[],
       // onCut: що робити з перетнутим лінком
       (link) => {
         const idx = links.indexOf(link as any);
@@ -73,10 +81,9 @@ export default class MouseTrailCutter {
         maxPoints: 20,
         minPointDist: 8,
         depth: 200, // поверх усього UI
+        canCut,
       }
     );
-
-    return cutter;
   }
 
   private scene: Phaser.Scene;
@@ -108,6 +115,7 @@ export default class MouseTrailCutter {
       maxPoints: opts.maxPoints ?? 32,
       minPointDist: opts.minPointDist ?? 10,
       depth: opts.depth ?? 120,
+      canCut: opts.canCut ?? (() => true),
     };
 
     this.gfx = scene.add.graphics().setDepth(this.opts.depth);
@@ -189,6 +197,8 @@ export default class MouseTrailCutter {
 
       for (const link of links) {
         if (link.active === false) continue;
+        if (!this.opts.canCut(link)) continue;
+
         const a = centerWorld(link.from);
         const b = centerWorld(link.to);
         const linkLine = new Phaser.Geom.Line(a.x, a.y, b.x, b.y);
